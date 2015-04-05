@@ -1,6 +1,7 @@
-set number
-colors koehler
-syntax on
+" GENERAL EDITOR SETTINGS
+set number              " line numbers
+colors koehler          " good default color scheme
+syntax on               " syntax highlighting
 
 set showcmd             " show partial command in bottom line of editor (adds helpful info to what you're typing)
 set showmatch           " show matching brackets
@@ -9,17 +10,22 @@ set smartcase           " smart case matching
 set incsearch           " incremental search
 set mouse=a             " enable mouse usage
 
+" FILES
 " When coding, auto-indent by 4 spaces, just like in K&R
 " Note that this does NOT change tab into 4 spaces
 " You can do that with "set tabstop=4", which is a BAD idea
 set shiftwidth=4
 
-" replace tab with 8 spaces, except for makefiles
+" replace tab with 8 spaces
 set expandtab
+
+" MAKEFILES
 autocmd FileType make setlocal noexpandtab
-" python specific settings
+
+" PYTHON FILES
 autocmd FileType python set tabstop=4|set shiftwidth=4|set expandtab
 
+" TEXT FILES
 " Jae's settings when editing *.txt files
 "   - automatically indent lines according to previous lines
 "   - replace tab with 8 spaces
