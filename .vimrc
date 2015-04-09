@@ -10,6 +10,12 @@ set smartcase           " smart case matching
 set incsearch           " incremental search
 set mouse=a             " enable mouse usage
 
+" have Vim jump to the last position when reopening a file
+if has("autocmd")
+  au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$")
+    \| exe "normal! g'\"" | endif
+endif
+
 " FILES
 " When coding, auto-indent by 4 spaces, just like in K&R
 " Note that this does NOT change tab into 4 spaces
