@@ -5,6 +5,14 @@
 alias ls='ls --color=auto'
 alias ll='ls -la'
 
+# if Mac, set up __git_ps1 before changing PS1 (from http://stackoverflow.com/questions/12870928)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  if [[ ! -f ~/.git-prompt.sh ]]; then
+    curl -o ~/.git-prompt.sh https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
+  fi
+  source ~/.git-prompt.sh
+fi
+
 # red blue green color scheme
 PS1='\[\e[0;31m\]\u\[\e[m\]\[\e[1;34m\]\w\[\e[m\]\[\e[0;31m\]\[\e[m\]\[\e[0;32m\]$(__git_ps1)\[\033[01;34m\] \$\[\033[00m\] '
 
