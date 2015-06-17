@@ -83,3 +83,6 @@ function ToggleHex()
   let &readonly=l:oldreadonly
   let &modifiable=l:oldmodifiable
 endfunction
+
+" JSON PRETTY PRINT https://pascalprecht.github.io/2014/07/10/pretty-print-json-in-vim/
+:command PrettyJson :%!python -m json.tool
