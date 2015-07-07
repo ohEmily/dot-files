@@ -42,7 +42,7 @@ autocmd FileType text setlocal autoindent expandtab softtabstop=2 textwidth=76 s
 
 " HEXFILES (from http://vim.wikia.com/wiki/Improved_hex_editing)
 " ex command for toggling hex mode - define mapping if desired
-command -bar Hexmode call ToggleHex()
+command -bar Hex call ToggleHex()
 
 " helper function to toggle hex mode
 function ToggleHex()
@@ -85,4 +85,4 @@ function ToggleHex()
 endfunction
 
 " JSON PRETTY PRINT https://pascalprecht.github.io/2014/07/10/pretty-print-json-in-vim/
-:command PrettyJson :%!python -m json.tool
+:command Json :%!python -m json.tool
