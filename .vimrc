@@ -9,6 +9,7 @@ set ignorecase          " case insensitive matching
 set smartcase           " smart case matching
 set incsearch           " incremental search
 set mouse=a             " enable mouse usage
+set cursorline          " underlines current line
 
 " have Vim jump to the last position when reopening a file
 if has("autocmd")
