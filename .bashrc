@@ -10,6 +10,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   if [[ ! -f ~/.git-prompt.sh ]]; then
     curl -o ~/.git-prompt.sh https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
   fi
+  export CLICOLOR=1
+  export LSCOLORS=gxBxhxDxfxhxhxhxhxcxcx
   source ~/.git-prompt.sh
 fi
 
