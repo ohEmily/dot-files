@@ -29,3 +29,12 @@ alias glog='git log --graph --pretty=oneline --abbrev-commit'
 alias gpush='git push origin master'
 alias gpull='git pull origin master'
 alias gconfig='git config --list'
+
+# connect to wifi from command line
+wificonn() {
+        if [ $# -lt 1 ]; then
+                echo "Usage: $0 <access point name>"
+        fi
+        nmcli dev wifi connect $1
+} 
+alias wifiscan='sudo iwlist wlan0 s'
