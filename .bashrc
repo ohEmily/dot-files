@@ -8,6 +8,13 @@ alias ll='ls -la'
 if [[ ! -f ~/.git-prompt.sh ]]; then
   curl -o ~/.git-prompt.sh https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
 fi
+
+# autocompletion for git
+if [ ! -f ~/.git-completion.bash ]; then
+  curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o ~/.git-completion.bash
+  . ~/.git-completion.bash
+fi
+
 export CLICOLOR=1
 export LSCOLORS=gxBxhxDxfxhxhxhxhxcxcx
 source ~/.git-prompt.sh
