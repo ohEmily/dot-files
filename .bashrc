@@ -10,10 +10,10 @@ if [[ ! -f ~/.git-prompt.sh ]]; then
 fi
 source ~/.git-prompt.sh
 
-# autocompletion for git
+# autocompletion for git (not available by default on OSX)
 if [ ! -f ~/.git-completion.bash ]; then
   curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o ~/.git-completion.bash
-  . ~/.git-completion.bash
+  source ~/.git-completion.bash
 fi
 
 export CLICOLOR=1
