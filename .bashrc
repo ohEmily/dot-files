@@ -13,8 +13,8 @@ source ~/.git-prompt.sh
 # autocompletion for git (not available by default on OSX)
 if [ ! -f ~/.git-completion.bash ]; then
   curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o ~/.git-completion.bash
-  source ~/.git-completion.bash
 fi
+source ~/.git-completion.bash
 
 export CLICOLOR=1
 export LSCOLORS=gxBxhxDxfxhxhxhxhxcxcx
