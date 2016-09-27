@@ -16,6 +16,11 @@ if [ ! -f ~/.git-completion.bash ]; then
 fi
 source ~/.git-completion.bash
 
+# Vundle (vim plugin manager)
+if [ ! -f ~/.vim/bundle/Vundle.vim ]; then
+  git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+fi
+
 export CLICOLOR=1
 export LSCOLORS=gxBxhxDxfxhxhxhxhxcxcx
 

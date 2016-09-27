@@ -45,7 +45,21 @@ autocmd FileType text setlocal autoindent expandtab softtabstop=2 textwidth=76 s
 " ex command for toggling hex mode - define mapping if desired
 command -bar Hex call ToggleHex()
 
-" helper function to toggle hex mode
+" VUNDLE (https://github.com/VundleVim/Vundle.vim)
+set nocompatible              " be iMproved, required
+filetype off                  " required
+
+" set the runtime path to include Vundle and initialize
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+" let Vundle manage Vundle, required
+Plugin 'VundleVim/Vundle.vim'
+
+call vundle#end()            " required
+filetype plugin indent on    " required
+
+" HEXMODE helper function to toggle hex mode
 function ToggleHex()
   " hex mode should be considered a read-only operation
   " save values for modified and read-only for restoration later,
