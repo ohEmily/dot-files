@@ -1,3 +1,18 @@
+" VUNDLE (https://github.com/VundleVim/Vundle.vim)
+set nocompatible              " be iMproved, required
+filetype off                  " required
+
+" set the runtime path to include Vundle and initialize
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+" let Vundle manage Vundle, required
+Plugin 'VundleVim/Vundle.vim'
+
+call vundle#end()            " required
+filetype plugin indent on    " required
+
+
 " GENERAL EDITOR SETTINGS
 set number              " line numbers
 colors koehler          " good default color scheme
@@ -44,20 +59,6 @@ autocmd FileType text setlocal autoindent expandtab softtabstop=2 textwidth=76 s
 " HEXFILES (from http://vim.wikia.com/wiki/Improved_hex_editing)
 " ex command for toggling hex mode - define mapping if desired
 command -bar Hex call ToggleHex()
-
-" VUNDLE (https://github.com/VundleVim/Vundle.vim)
-set nocompatible              " be iMproved, required
-filetype off                  " required
-
-" set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
-
-" let Vundle manage Vundle, required
-Plugin 'VundleVim/Vundle.vim'
-
-call vundle#end()            " required
-filetype plugin indent on    " required
 
 " HEXMODE helper function to toggle hex mode
 function ToggleHex()
