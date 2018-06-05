@@ -2,7 +2,8 @@
 # ~/.bashrc
 #
 
-alias ll='ls -la'
+# pbcopy equivalent for ubuntu
+alias copy='xsel -ib'
 
 # On Mac or Ubuntu, set up __git_ps1 before changing PS1 (from http://stackoverflow.com/questions/12870928)
 if [[ ! -f ~/.git-prompt.sh ]]; then
