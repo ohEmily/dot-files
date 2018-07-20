@@ -5,6 +5,8 @@
 # pbcopy equivalent for ubuntu
 alias copy='xsel -ib'
 
+export GIT_EDITOR=`which vi`
+
 # On Mac or Ubuntu, set up __git_ps1 before changing PS1 (from http://stackoverflow.com/questions/12870928)
 if [[ ! -f ~/.git-prompt.sh ]]; then
   curl -o ~/.git-prompt.sh https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
