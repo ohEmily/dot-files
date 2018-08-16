@@ -4,6 +4,7 @@
 
 export GIT_EDITOR=`which vi`
 export CLICOLOR=1
+source .env-config/*
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   alias ls='ls --color=auto'
