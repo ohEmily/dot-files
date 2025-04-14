@@ -1,9 +1,8 @@
 new machine:
 ```
 git clone https://github.com/ohEmily/dot-files.git
-chmod 755 dot-files/.*
-mv dot-files/.bashrc ~/.my_bashrc
-echo 'source ~/.my_bashrc' >> ~/.bashrc
-mv dot-files/.vimrc ~/.vimrc
-rm -rf dot-files
+cd dot-files
+cp .env.example .env     # Edit this file to include your API keys
+chmod +x setup.sh
+./setup.sh
 ```
