@@ -95,22 +95,6 @@ setup_powerlevel10k() {
     fi
 }
 
-install_llm() {
-  echo "Installing llm using pipx..."
-  if ! command -v pipx >/dev/null 2>&1; then
-    echo "Installing pipx..."
-    python3 -m pip install --user pipx
-    python3 -m pipx ensurepath
-    export PATH="$HOME/.local/bin:$PATH"
-  fi
-
-  if ! command -v llm >/dev/null 2>&1; then
-    pipx install llm
-  else
-    echo "llm already installed."
-  fi
-}
-
 configure_llm_from_env() {
   echo "Configuring llm from .env..."
 
@@ -133,17 +117,41 @@ configure_llm_from_env() {
   KEY_PATH="$(llm keys path)"
   mkdir -p "$(dirname "$KEY_PATH")"
 
-  jq -n \
-    --arg openai "${OPENAI_API_KEY:-}" \
-    --arg gemini "${GEMINI_API_KEY:-}" \
-    --arg anthropic "${CLAUDE_API_KEY:-}" \
-    '{
-      openai: $openai,
-      gemini: $gemini,
-      anthropic: $anthropic
-    }' > "$KEY_PATH"
+  # Create a JSON object with non-empty API keys
+  local json="{}"
+  
+  if [[ -n "${OPENAI_API_KEY:-}" ]]; then
+    json=$(jq -n --arg openai "$OPENAI_API_KEY" '. + {openai: $openai}' <<< "$json")
+  fi
+  
+  if [[ -n "${GEMINI_API_KEY:-}" ]]; then
+    json=$(jq -n --arg gemini "$GEMINI_API_KEY" '. + {gemini: $gemini}' <<< "$json")
+  fi
+  
+  if [[ -n "${CLAUDE_API_KEY:-}" ]]; then
+    json=$(jq -n --arg anthropic "$CLAUDE_API_KEY" '. + {anthropic: $anthropic}' <<< "$json")
+  fi
 
+  echo "$json" > "$KEY_PATH"
   echo "Wrote llm keys to $KEY_PATH."
+}
+
+install_llm() {
+  echo "Installing llm using pipx..."
+  if ! command -v pipx >/dev/null 2>&1; then
+    echo "Installing pipx..."
+    python3 -m pip install --user pipx
+    python3 -m pipx ensurepath
+    export PATH="$HOME/.local/bin:$PATH"
+  fi
+
+  if ! command -v llm >/dev/null 2>&1; then
+    pipx install llm
+  else
+    echo "llm already installed."
+  fi
+
+  configure_llm_from_env
 }
 
 detect_os() {
@@ -235,7 +243,6 @@ main() {
     setup_git
     setup_vim
     install_llm
-    configure_llm_from_env
 }
 
 main "$@"
