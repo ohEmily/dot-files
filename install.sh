@@ -190,6 +190,29 @@ setup_vim() {
     vim +PluginInstall +qall
 }
 
+setup_git() {
+    echo "Setting up git configuration..."
+    local CONFIG_DIR
+    CONFIG_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    # Set default branch name to 'main'
+    git config --global init.defaultBranch main
+
+    if [[ ! -f "$CONFIG_DIR/.env" ]]; then
+        echo "No .env file found — skipping git config."
+        return
+    fi
+    source "$CONFIG_DIR/.env"
+
+    if [[ -n "${GIT_USER_NAME:-}" ]]; then
+        git config --global user.name "$GIT_USER_NAME"
+    fi
+
+    if [[ -n "${GIT_USER_EMAIL:-}" ]]; then
+        git config --global user.email "$GIT_USER_EMAIL"
+    fi
+}
+
 main() {
     local OS
     OS=$(detect_os)
@@ -209,6 +232,7 @@ main() {
     install_oh_my_zsh
     setup_powerlevel10k
     setup_aliases
+    setup_git
     setup_vim
     install_llm
     configure_llm_from_env
