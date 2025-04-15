@@ -6,3 +6,9 @@ cp .env.example .env     # Edit this file to include your API keys
 chmod +x setup.sh
 ./setup.sh
 ```
+
+linting:
+```
+brew install shellcheck
+shellcheck install.sh
+```

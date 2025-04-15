@@ -106,6 +106,7 @@ configure_llm_from_env() {
     return
   fi
 
+  # shellcheck disable=SC1091
   source "$CONFIG_DIR/.env"
 
   if ! command -v llm >/dev/null 2>&1; then
@@ -210,6 +211,7 @@ setup_git() {
         echo "No .env file found — skipping git config."
         return
     fi
+    # shellcheck disable=SC1091
     source "$CONFIG_DIR/.env"
 
     if [[ -n "${GIT_USER_NAME:-}" ]]; then
