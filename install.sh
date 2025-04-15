@@ -121,20 +121,42 @@ configure_llm_from_env() {
   # Create a JSON object with non-empty API keys
   local json="{}"
   
-  if [[ -n "${OPENAI_API_KEY:-}" ]]; then
+  if [[ -n "${OPENAI_API_KEY:-}" && "$OPENAI_API_KEY" != "" ]]; then
     json=$(jq -n --arg openai "$OPENAI_API_KEY" '. + {openai: $openai}' <<< "$json")
   fi
   
-  if [[ -n "${GEMINI_API_KEY:-}" ]]; then
+  if [[ -n "${GEMINI_API_KEY:-}" && "$GEMINI_API_KEY" != "" ]]; then
     json=$(jq -n --arg gemini "$GEMINI_API_KEY" '. + {gemini: $gemini}' <<< "$json")
   fi
   
-  if [[ -n "${CLAUDE_API_KEY:-}" ]]; then
+  if [[ -n "${CLAUDE_API_KEY:-}" && "$CLAUDE_API_KEY" != "" ]]; then
     json=$(jq -n --arg anthropic "$CLAUDE_API_KEY" '. + {anthropic: $anthropic}' <<< "$json")
   fi
 
-  echo "$json" > "$KEY_PATH"
-  echo "Wrote llm keys to $KEY_PATH."
+  # Only write the file if we have valid keys
+  if [[ "$json" != "{}" ]]; then
+    echo "$json" > "$KEY_PATH"
+    echo "Wrote llm API keys to $KEY_PATH."
+  else
+    echo "No valid API keys found in .env file. Not configuring llm credentials."
+  fi
+
+  # Configure llm-cmd if installed
+  if command -v llm-cmd >/dev/null 2>&1; then
+    echo "Configuring llm-cmd..."
+    # Create llm-cmd config directory if it doesn't exist
+    local LLM_CMD_CONFIG_DIR="$HOME/.config/llm-cmd"
+    mkdir -p "$LLM_CMD_CONFIG_DIR"
+
+    # Create a basic llm-cmd config file
+    cat > "$LLM_CMD_CONFIG_DIR/config.yaml" << EOF
+# llm-cmd configuration
+model: gpt-4  # default model to use
+temperature: 0.7  # creativity level (0.0 to 1.0)
+max_tokens: 1000  # maximum response length
+EOF
+    echo "Created llm-cmd configuration at $LLM_CMD_CONFIG_DIR/config.yaml"
+  fi
 }
 
 install_llm() {
@@ -148,8 +170,19 @@ install_llm() {
 
   if ! command -v llm >/dev/null 2>&1; then
     pipx install llm
+    # Ensure the symlink is created correctly
+    pipx ensurepath
+    export PATH="$HOME/.local/bin:$PATH"
   else
     echo "llm already installed."
+  fi
+
+  # Install llm-cmd
+  if ! command -v llm-cmd >/dev/null 2>&1; then
+    echo "Installing llm-cmd..."
+    pipx install --include-deps llm-cmd
+  else
+    echo "llm-cmd already installed."
   fi
 
   configure_llm_from_env
