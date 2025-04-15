@@ -23,6 +23,7 @@ install_dependencies_mac() {
     brew list python >/dev/null 2>&1 || brew install python
     brew list git >/dev/null 2>&1 || brew install git
     brew list curl >/dev/null 2>&1 || brew install curl
+    brew list vim >/dev/null 2>&1 || brew install vim
 }
 
 install_dependencies_ubuntu() {
@@ -37,7 +38,7 @@ install_dependencies_ubuntu() {
         echo "zsh is already installed at $(command -v zsh)."
     fi
 
-    sudo apt-get install -y curl git nodejs npm python3 python3-pip
+    sudo apt-get install -y curl git nodejs npm python3 python3-pip vim
 }
 
 install_oh_my_zsh() {
@@ -160,6 +161,28 @@ set_default_shell_to_zsh() {
   fi
 }
 
+setup_vim() {
+    echo "Setting up Vim configuration..."
+    local CONFIG_DIR
+    CONFIG_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    if [[ ! -d "$HOME/.vim/bundle/Vundle.vim" ]]; then
+        echo "Installing Vundle..."
+        git clone https://github.com/VundleVim/Vundle.vim.git "$HOME/.vim/bundle/Vundle.vim"
+    fi
+
+    if [[ -f "$CONFIG_DIR/.vimrc" ]]; then
+        echo "Copying .vimrc configuration..."
+        cp "$CONFIG_DIR/.vimrc" "$HOME/.vimrc"
+    else
+        echo "Warning: No .vimrc configuration file found in $CONFIG_DIR"
+        return 1
+    fi
+
+    echo "Installing Vim plugins..."
+    vim +PluginInstall +qall
+}
+
 main() {
     local OS
     OS=$(detect_os)
@@ -178,7 +201,7 @@ main() {
 
     install_oh_my_zsh
     setup_powerlevel10k
-    # TODO: commit .zshrc and powerlevel10k config from home laptop
+    setup_vim
     install_llm
     configure_llm_from_env
 }
