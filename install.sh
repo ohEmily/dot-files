@@ -56,6 +56,13 @@ install_oh_my_zsh() {
     }
 }
 
+setup_aliases() {
+    # show all files (including hidden files starting with .) by default
+    if ! grep -q 'alias ls=' "$HOME/.zshrc"; then
+        echo 'alias ls="ls -a"' >> "$HOME/.zshrc"
+    fi
+}
+
 setup_powerlevel10k() {
     echo "Setting up Powerlevel10k theme..."
     local ZSH_CUSTOM=${ZSH_CUSTOM:-"$HOME/.oh-my-zsh/custom"}
@@ -201,6 +208,7 @@ main() {
 
     install_oh_my_zsh
     setup_powerlevel10k
+    setup_aliases
     setup_vim
     install_llm
     configure_llm_from_env
