@@ -57,9 +57,29 @@ install_oh_my_zsh() {
 }
 
 setup_aliases() {
-    # show all files (including hidden files starting with .) by default
+    # Base ls command with show all files (including hidden files starting with .) by default
     if ! grep -q 'alias ls=' "$HOME/.zshrc"; then
         echo 'alias ls="ls -a"' >> "$HOME/.zshrc"
+    fi
+
+    # Add color support for ls
+    if [[ "$(detect_os)" == "mac" ]]; then
+        if ! grep -q 'alias ls=' "$HOME/.zshrc" || ! grep -q 'ls -aG' "$HOME/.zshrc"; then
+            sed -i.bak 's/alias ls="ls -a"/alias ls="ls -aG"/' "$HOME/.zshrc"
+        fi
+    else
+        if ! grep -q 'alias ls=' "$HOME/.zshrc" || ! grep -q 'ls -a --color=auto' "$HOME/.zshrc"; then
+            sed -i.bak 's/alias ls="ls -a"/alias ls="ls -a --color=auto"/' "$HOME/.zshrc"
+        fi
+        # Enable color support of ls and also add handy aliases
+        if ! grep -q 'eval.*dircolors' "$HOME/.zshrc"; then
+            echo 'eval "$(dircolors -b)"' >> "$HOME/.zshrc"
+        fi
+    fi
+
+    # Add color support for grep
+    if ! grep -q 'alias grep=' "$HOME/.zshrc"; then
+        echo 'alias grep="grep --color=auto"' >> "$HOME/.zshrc"
     fi
 }
 
