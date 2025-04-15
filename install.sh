@@ -69,6 +69,22 @@ setup_powerlevel10k() {
     else
         echo 'ZSH_THEME="powerlevel10k/powerlevel10k"' >> "$HOME/.zshrc"
     fi
+
+    # Copy .p10k.zsh configuration
+    local CONFIG_DIR
+    CONFIG_DIR="$(cd "$(dirname "$0")" && pwd)"
+    if [[ -f "$CONFIG_DIR/.p10k.zsh" ]]; then
+        echo "Copying .p10k.zsh configuration..."
+        cp "$CONFIG_DIR/.p10k.zsh" "$HOME/.p10k.zsh"
+    else
+        echo "Warning: No .p10k.zsh configuration file found in $CONFIG_DIR"
+        echo "You can run 'p10k configure' to create a new configuration"
+    fi
+
+    # prevent configuration wizard from running on startup
+    if ! grep -q 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' "$HOME/.zshrc"; then
+        echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' >> "$HOME/.zshrc"
+    fi
 }
 
 install_llm() {
