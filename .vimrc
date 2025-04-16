@@ -9,13 +9,15 @@ call vundle#begin()
 " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
 
+" Markdown syntax highlighting
+Plugin 'plasticboy/vim-markdown'
+
 call vundle#end()            " required
 filetype plugin indent on    " required
 
-
 " GENERAL EDITOR SETTINGS
 set number              " line numbers
-colors koehler          " good default color scheme
+colors desert
 syntax on               " syntax highlighting
 
 set showcmd             " show partial command in bottom line of editor (adds helpful info to what you're typing)
@@ -55,6 +57,11 @@ autocmd FileType python set tabstop=4|set shiftwidth=4|set expandtab
 "   - wrap text if I go longer than 76 columns
 "   - check spelling
 autocmd FileType text setlocal autoindent expandtab softtabstop=2 textwidth=76 spell spelllang=en_us
+
+" MARKDOWN FILES
+autocmd FileType markdown setlocal spell spelllang=en_us
+autocmd FileType markdown setlocal conceallevel=2
+autocmd FileType markdown setlocal wrap linebreak nolist
 
 " HEXFILES (from http://vim.wikia.com/wiki/Improved_hex_editing)
 " ex command for toggling hex mode - define mapping if desired
