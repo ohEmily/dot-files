@@ -1,4 +1,21 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Common CLI tools installed on all supported platforms.
+# Note: these are installed globally in the system package manager namespace
+# (Homebrew/apt), not per-project. Prefer project-local tooling where appropriate.
+COMMON_CLI_TOOLS=(
+    git
+    wget
+    curl
+    ca-certificates
+    coreutils
+    jq
+    tree
+    vim
+    direnv
+    pipx
+)
 
 install_dependencies_mac() {
     if ! command -v brew >/dev/null 2>&1; then
@@ -18,12 +35,18 @@ install_dependencies_mac() {
         echo "Zsh is already installed at $(command -v zsh)"
     fi
 
-    echo "Installing other required dependencies via Homebrew..."
-    brew list node >/dev/null 2>&1 || brew install node
-    brew list python >/dev/null 2>&1 || brew install python
-    brew list git >/dev/null 2>&1 || brew install git
-    brew list curl >/dev/null 2>&1 || brew install curl
-    brew list vim >/dev/null 2>&1 || brew install vim
+    # Note: these tools are installed globally via Homebrew in the system namespace,
+    # not per-project. Prefer project-local tooling where appropriate.
+    echo "Installing core CLI tools via Homebrew..."
+    local core_tools=("${COMMON_CLI_TOOLS[@]}" node python)
+    for pkg in "${core_tools[@]}"; do
+        brew list "$pkg" >/dev/null 2>&1 || brew install "$pkg"
+    done
+
+    # Ensure direnv is wired into zsh
+    if ! grep -q "direnv hook zsh" "$HOME/.zshrc" 2>/dev/null; then
+        echo 'eval "$(direnv hook zsh)"' >> "$HOME/.zshrc"
+    fi
 }
 
 install_dependencies_ubuntu() {
@@ -38,7 +61,39 @@ install_dependencies_ubuntu() {
         echo "zsh is already installed at $(command -v zsh)."
     fi
 
-    sudo apt-get install -y curl git nodejs npm python3 python3-pip vim
+    # Note: these tools are installed globally via apt in the system namespace,
+    # not per-project. Prefer project-local tooling where appropriate.
+    # COMMON_CLI_TOOLS are shared with macOS; ubuntu_only extends that set to
+    # approximate the Homebrew-based setup (e.g., nodejs/npm vs Homebrew's node).
+    local ubuntu_only=(
+        nodejs
+        npm
+        python3
+    )
+    local packages=("${COMMON_CLI_TOOLS[@]}" "${ubuntu_only[@]}")
+    sudo apt-get install -y "${packages[@]}"
+
+    # Ensure direnv is wired into zsh
+    if ! grep -q "direnv hook zsh" "$HOME/.zshrc" 2>/dev/null; then
+        echo 'eval "$(direnv hook zsh)"' >> "$HOME/.zshrc"
+    fi
+}
+
+ensure_uv_with_pipx() {
+    if ! command -v pipx >/dev/null 2>&1; then
+        echo "pipx not found; skipping uv install via pipx."
+        return 0
+    fi
+
+    if ! command -v uv >/dev/null 2>&1; then
+        echo "Installing uv via pipx..."
+        pipx install uv || true
+        pipx ensurepath || true
+    else
+        # Still run ensurepath to help put pipx shims on PATH for future shells
+        pipx ensurepath || true
+        echo "uv already installed."
+    fi
 }
 
 install_oh_my_zsh() {
@@ -48,8 +103,9 @@ install_oh_my_zsh() {
     fi
 
     echo "Installing Oh My Zsh..."
-    export RUNZSH="no"
-    export CHSH="no"
+    export RUNZSH="no"   # don't start a new zsh session after install
+    export CHSH="no"      # don't change the default shell automatically
+    export KEEP_ZSHRC="yes"  # keep existing ~/.zshrc instead of overwriting it
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || {
         echo "Failed to install Oh My Zsh" >&2
         return 1
@@ -115,99 +171,6 @@ setup_powerlevel10k() {
     fi
 }
 
-configure_llm_from_env() {
-  echo "Configuring llm from .env..."
-
-  local CONFIG_DIR
-  CONFIG_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-  if [[ ! -f "$CONFIG_DIR/.env" ]]; then
-    echo "No .env file found — skipping llm config."
-    return
-  fi
-
-  # shellcheck disable=SC1091
-  source "$CONFIG_DIR/.env"
-
-  if ! command -v llm >/dev/null 2>&1; then
-    echo "llm command not found — cannot configure API keys."
-    return
-  fi
-
-  local KEY_PATH
-  KEY_PATH="$(llm keys path)"
-  mkdir -p "$(dirname "$KEY_PATH")"
-
-  # Create a JSON object with non-empty API keys
-  local json="{}"
-  
-  if [[ -n "${OPENAI_API_KEY:-}" && "$OPENAI_API_KEY" != "" ]]; then
-    json=$(jq -n --arg openai "$OPENAI_API_KEY" '. + {openai: $openai}' <<< "$json")
-  fi
-  
-  if [[ -n "${GEMINI_API_KEY:-}" && "$GEMINI_API_KEY" != "" ]]; then
-    json=$(jq -n --arg gemini "$GEMINI_API_KEY" '. + {gemini: $gemini}' <<< "$json")
-  fi
-  
-  if [[ -n "${CLAUDE_API_KEY:-}" && "$CLAUDE_API_KEY" != "" ]]; then
-    json=$(jq -n --arg anthropic "$CLAUDE_API_KEY" '. + {anthropic: $anthropic}' <<< "$json")
-  fi
-
-  # Only write the file if we have valid keys
-  if [[ "$json" != "{}" ]]; then
-    echo "$json" > "$KEY_PATH"
-    echo "Wrote llm API keys to $KEY_PATH."
-  else
-    echo "No valid API keys found in .env file. Not configuring llm credentials."
-  fi
-
-  # Configure llm-cmd if installed
-  if command -v llm-cmd >/dev/null 2>&1; then
-    echo "Configuring llm-cmd..."
-    # Create llm-cmd config directory if it doesn't exist
-    local LLM_CMD_CONFIG_DIR="$HOME/.config/llm-cmd"
-    mkdir -p "$LLM_CMD_CONFIG_DIR"
-
-    # Create a basic llm-cmd config file
-    cat > "$LLM_CMD_CONFIG_DIR/config.yaml" << EOF
-# llm-cmd configuration
-model: gpt-4  # default model to use
-temperature: 0.7  # creativity level (0.0 to 1.0)
-max_tokens: 1000  # maximum response length
-EOF
-    echo "Created llm-cmd configuration at $LLM_CMD_CONFIG_DIR/config.yaml"
-  fi
-}
-
-install_llm() {
-  echo "Installing llm using pipx..."
-  if ! command -v pipx >/dev/null 2>&1; then
-    echo "Installing pipx..."
-    python3 -m pip install --user pipx
-    python3 -m pipx ensurepath
-    export PATH="$HOME/.local/bin:$PATH"
-  fi
-
-  if ! command -v llm >/dev/null 2>&1; then
-    pipx install llm
-    # Ensure the symlink is created correctly
-    pipx ensurepath
-    export PATH="$HOME/.local/bin:$PATH"
-  else
-    echo "llm already installed."
-  fi
-
-  # Install llm-cmd
-  if ! command -v llm-cmd >/dev/null 2>&1; then
-    echo "Installing llm-cmd..."
-    pipx install --include-deps llm-cmd
-  else
-    echo "llm-cmd already installed."
-  fi
-
-  configure_llm_from_env
-}
-
 detect_os() {
   case "$OSTYPE" in
       darwin*) echo "mac" ;;
@@ -249,7 +212,7 @@ setup_vim() {
     fi
 
     echo "Installing Vim plugins..."
-    vim +PluginInstall +qall
+    vim -E -s +PluginInstall +qall
 }
 
 setup_git() {
@@ -276,6 +239,22 @@ setup_git() {
     fi
 }
 
+setup_dev_environment_mac() {
+    if [[ "$(detect_os)" != "mac" ]]; then
+        return 0
+    fi
+
+    echo "Installing Docker Desktop (via Homebrew cask)..."
+    if ! brew list --cask docker >/dev/null 2>&1; then
+        brew install --cask docker || true
+    else
+        echo "Docker Desktop already installed."
+    fi
+
+    echo "Creating standard development directories..."
+    mkdir -p "$HOME/dev" "$HOME/bin"
+}
+
 main() {
     local OS
     OS=$(detect_os)
@@ -288,16 +267,17 @@ main() {
 
     if [[ "$OS" == "mac" ]]; then
         install_dependencies_mac
+        setup_dev_environment_mac
     elif [[ "$OS" == "linux" ]]; then
         install_dependencies_ubuntu
     fi
 
+    ensure_uv_with_pipx
     install_oh_my_zsh
     setup_powerlevel10k
     setup_aliases
     setup_git
     setup_vim
-    install_llm
 }
 
 main "$@"
