@@ -7,7 +7,6 @@ set -euo pipefail
 COMMON_CLI_TOOLS=(
     git
     wget
-    curl
     ca-certificates
     coreutils
     jq
@@ -69,6 +68,7 @@ install_dependencies_ubuntu() {
         nodejs
         npm
         python3
+        curl # similar to MacOS curl
     )
     local packages=("${COMMON_CLI_TOOLS[@]}" "${ubuntu_only[@]}")
     sudo apt-get install -y "${packages[@]}"
