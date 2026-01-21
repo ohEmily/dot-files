@@ -45,7 +45,7 @@ install_dependencies_mac() {
 
     # Ensure direnv is wired into zsh
     if ! grep -q "direnv hook zsh" "$HOME/.zshrc" 2>/dev/null; then
-        echo 'eval "$(direnv hook zsh)"' >> "$HOME/.zshrc"
+        echo "eval \"$(direnv hook zsh)\"" >> "$HOME/.zshrc"
     fi
 }
 
@@ -75,7 +75,7 @@ install_dependencies_ubuntu() {
 
     # Ensure direnv is wired into zsh
     if ! grep -q "direnv hook zsh" "$HOME/.zshrc" 2>/dev/null; then
-        echo 'eval "$(direnv hook zsh)"' >> "$HOME/.zshrc"
+        echo "eval \"$(direnv hook zsh)\"" >> "$HOME/.zshrc"
     fi
 }
 
@@ -129,7 +129,7 @@ setup_aliases() {
         fi
         # Enable color support of ls and also add handy aliases
         if ! grep -q 'eval.*dircolors' "$HOME/.zshrc"; then
-            echo 'eval "$(dircolors -b)"' >> "$HOME/.zshrc"
+            echo "eval \"$(dircolors -b)\"" >> "$HOME/.zshrc"
         fi
     fi
 
