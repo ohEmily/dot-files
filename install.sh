@@ -44,7 +44,7 @@ install_dependencies_mac() {
 
     # Ensure direnv is wired into zsh
     if ! grep -q "direnv hook zsh" "$HOME/.zshrc" 2>/dev/null; then
-        echo "eval \"$(direnv hook zsh)\"" >> "$HOME/.zshrc"
+        direnv hook zsh >> "$HOME/.zshrc"
     fi
 }
 
@@ -75,7 +75,7 @@ install_dependencies_ubuntu() {
 
     # Ensure direnv is wired into zsh
     if ! grep -q "direnv hook zsh" "$HOME/.zshrc" 2>/dev/null; then
-        echo "eval \"$(direnv hook zsh)\"" >> "$HOME/.zshrc"
+        direnv hook zsh >> "$HOME/.zshrc"
     fi
 }
 
