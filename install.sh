@@ -223,20 +223,33 @@ setup_git() {
     # Set default branch name to 'main'
     git config --global init.defaultBranch main
 
-    if [[ ! -f "$CONFIG_DIR/.env" ]]; then
-        echo "No .env file found — skipping git config."
+    # If git global identity is already configured, respect it and exit early.
+    local existing_name existing_email
+    existing_name="$(git config --global user.name 2>/dev/null || true)"
+    existing_email="$(git config --global user.email 2>/dev/null || true)"
+
+    if [[ -n "$existing_name" && -n "$existing_email" ]]; then
+        echo "Git global user.name and user.email already set; leaving existing values in place."
         return
     fi
+
+    # Require a local .env with GIT_USER_NAME and GIT_USER_EMAIL when not already configured.
+    if [[ ! -f "$CONFIG_DIR/.env" ]]; then
+        echo "Error: No .env file found, and git global user.name/user.email are not configured." >&2
+        echo "Create $CONFIG_DIR/.env based on .env.example and set GIT_USER_NAME and GIT_USER_EMAIL." >&2
+        exit 1
+    fi
+
     # shellcheck disable=SC1091
     source "$CONFIG_DIR/.env"
 
-    if [[ -n "${GIT_USER_NAME:-}" ]]; then
-        git config --global user.name "$GIT_USER_NAME"
+    if [[ -z "${GIT_USER_NAME:-}" || -z "${GIT_USER_EMAIL:-}" ]]; then
+        echo "Error: GIT_USER_NAME and GIT_USER_EMAIL must be set in $CONFIG_DIR/.env when git globals are unset." >&2
+        exit 1
     fi
 
-    if [[ -n "${GIT_USER_EMAIL:-}" ]]; then
-        git config --global user.email "$GIT_USER_EMAIL"
-    fi
+    git config --global user.name "$GIT_USER_NAME"
+    git config --global user.email "$GIT_USER_EMAIL"
 }
 
 setup_dev_environment_mac() {
