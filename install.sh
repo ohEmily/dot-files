@@ -13,7 +13,6 @@ COMMON_CLI_TOOLS=(
     tree
     vim
     direnv
-    pipx
 )
 
 install_dependencies_mac() {
@@ -79,20 +78,27 @@ install_dependencies_ubuntu() {
     fi
 }
 
-ensure_uv_with_pipx() {
-    if ! command -v pipx >/dev/null 2>&1; then
-        echo "pipx not found; skipping uv install via pipx."
+ensure_uv() {
+    if command -v uv >/dev/null 2>&1; then
+        echo "uv already installed."
         return 0
     fi
 
-    if ! command -v uv >/dev/null 2>&1; then
-        echo "Installing uv via pipx..."
-        pipx install uv || true
-        pipx ensurepath || true
+    echo "Installing uv..."
+    local OS
+    OS="$(detect_os)"
+
+    if [[ "$OS" == "mac" ]] && command -v brew >/dev/null 2>&1; then
+        # Prefer Homebrew on macOS when available
+        if ! brew list uv >/dev/null 2>&1; then
+            brew install uv || {
+                echo "Homebrew install of uv failed, falling back to official installer..." >&2
+                curl -LsSf https://astral.sh/uv/install.sh | sh
+            }
+        fi
     else
-        # Still run ensurepath to help put pipx shims on PATH for future shells
-        pipx ensurepath || true
-        echo "uv already installed."
+        # Fallback for Linux and other environments: use the official installer
+        curl -LsSf https://astral.sh/uv/install.sh | sh
     fi
 }
 
@@ -285,7 +291,7 @@ main() {
         install_dependencies_ubuntu
     fi
 
-    ensure_uv_with_pipx
+    ensure_uv
     install_oh_my_zsh
     setup_powerlevel10k
     setup_aliases
