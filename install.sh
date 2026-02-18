@@ -15,6 +15,60 @@ COMMON_CLI_TOOLS=(
     direnv
 )
 
+detect_os() {
+  case "$OSTYPE" in
+      darwin*) echo "mac" ;;
+      linux*) echo "linux" ;;
+      *) echo "unknown" ;;
+  esac
+}
+
+ensure_zshrc_exists() {
+    if [[ ! -f "$HOME/.zshrc" ]]; then
+        touch "$HOME/.zshrc"
+    fi
+}
+
+ensure_shell_listed_in_etc_shells() {
+    # macOS: chsh requires the shell path be listed in /etc/shells.
+    local target_shell="$1"
+    if [[ "$(detect_os)" == "mac" ]]; then
+        if ! grep -qxF "$target_shell" /etc/shells 2>/dev/null; then
+            echo "Adding $target_shell to /etc/shells (requires sudo)..."
+            echo "$target_shell" | sudo tee -a /etc/shells >/dev/null
+        fi
+    fi
+}
+
+ensure_default_shell_to_zsh() {
+    # Always try to make zsh the login shell (idempotent).
+    ensure_zshrc_exists
+
+    local target_shell
+    target_shell="$(command -v zsh || true)"
+    if [[ -z "$target_shell" ]]; then
+        echo "zsh not found on PATH; cannot set default shell." >&2
+        return 1
+    fi
+
+    ensure_shell_listed_in_etc_shells "$target_shell"
+
+    local current_shell target_real
+    current_shell="$(realpath "$SHELL")"
+    target_real="$(realpath "$target_shell")"
+
+    if [[ "$current_shell" != "$target_real" ]]; then
+        echo "Changing default shell from $current_shell to $target_real. May require password."
+        chsh -s "$target_real" "$USER" || {
+            echo "Warning: failed to change login shell via chsh. You may need to run it manually:" >&2
+            echo "  chsh -s \"$target_real\"" >&2
+            return 1
+        }
+    else
+        echo "Zsh is already the default login shell."
+    fi
+}
+
 install_dependencies_mac() {
     if ! command -v brew >/dev/null 2>&1; then
         echo "Installing Homebrew..."
@@ -28,10 +82,12 @@ install_dependencies_mac() {
     if ! command -v zsh >/dev/null 2>&1; then
         echo "Installing zsh via Homebrew..."
         brew install zsh
-        set_default_shell_to_zsh
     else
         echo "Zsh is already installed at $(command -v zsh)"
     fi
+
+    # Make sure login shell is zsh even if zsh already existed.
+    ensure_default_shell_to_zsh || true
 
     # Note: these tools are installed globally via Homebrew in the system namespace,
     # not per-project. Prefer project-local tooling where appropriate.
@@ -40,6 +96,8 @@ install_dependencies_mac() {
     for pkg in "${core_tools[@]}"; do
         brew list "$pkg" >/dev/null 2>&1 || brew install "$pkg"
     done
+
+    ensure_zshrc_exists
 
     # Ensure direnv is wired into zsh
     if ! grep -q "direnv hook zsh" "$HOME/.zshrc" 2>/dev/null; then
@@ -54,10 +112,12 @@ install_dependencies_ubuntu() {
     if ! command -v zsh >/dev/null 2>&1; then
         echo "Installing zsh via apt."
         sudo apt-get install -y zsh
-        set_default_shell_to_zsh
     else
         echo "zsh is already installed at $(command -v zsh)."
     fi
+
+    # Attempt to set login shell to zsh even if it already existed.
+    ensure_default_shell_to_zsh || true
 
     # Note: these tools are installed globally via apt in the system namespace,
     # not per-project. Prefer project-local tooling where appropriate.
@@ -67,10 +127,12 @@ install_dependencies_ubuntu() {
         nodejs
         npm
         python3
-        curl # similar to MacOS curl
+        curl # similar to macOS curl
     )
     local packages=("${COMMON_CLI_TOOLS[@]}" "${ubuntu_only[@]}")
     sudo apt-get install -y "${packages[@]}"
+
+    ensure_zshrc_exists
 
     # Ensure direnv is wired into zsh
     if ! grep -q "direnv hook zsh" "$HOME/.zshrc" 2>/dev/null; then
@@ -102,23 +164,49 @@ ensure_uv() {
     fi
 }
 
+ensure_oh_my_zsh_is_sourced() {
+    ensure_zshrc_exists
+
+    local zsh_dir="$HOME/.oh-my-zsh"
+    if [[ ! -d "$zsh_dir" ]]; then
+        return 0
+    fi
+
+    # Ensure export ZSH is present
+    if ! grep -qE '^export ZSH=.*\.oh-my-zsh' "$HOME/.zshrc" 2>/dev/null; then
+        echo 'export ZSH="$HOME/.oh-my-zsh"' >> "$HOME/.zshrc"
+    fi
+
+    # Ensure OMZ is sourced
+    if ! grep -qE '(^|\s)source\s+\$ZSH/oh-my-zsh\.sh' "$HOME/.zshrc" 2>/dev/null; then
+        echo 'source $ZSH/oh-my-zsh.sh' >> "$HOME/.zshrc"
+    fi
+}
+
 install_oh_my_zsh() {
+    ensure_zshrc_exists
+
     if [[ -d "$HOME/.oh-my-zsh" ]]; then
-        echo "Oh My Zsh already installed at $HOME/.oh-my-zsh. Skipping install."
+        echo "Oh My Zsh already installed at $HOME/.oh-my-zsh. Ensuring it is sourced in ~/.zshrc."
+        ensure_oh_my_zsh_is_sourced
         return
     fi
 
     echo "Installing Oh My Zsh..."
-    export RUNZSH="no"   # don't start a new zsh session after install
-    export CHSH="no"      # don't change the default shell automatically
-    export KEEP_ZSHRC="yes"  # keep existing ~/.zshrc instead of overwriting it
+    export RUNZSH="no"          # don't start a new zsh session after install
+    export CHSH="no"            # don't change the default shell automatically
+    export KEEP_ZSHRC="yes"     # keep existing ~/.zshrc instead of overwriting it
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" || {
         echo "Failed to install Oh My Zsh" >&2
         return 1
     }
+
+    ensure_oh_my_zsh_is_sourced
 }
 
 setup_aliases() {
+    ensure_zshrc_exists
+
     # Base ls command with show all files (including hidden files starting with .) by default
     if ! grep -q 'alias ls=' "$HOME/.zshrc"; then
         echo 'alias ls="ls -a"' >> "$HOME/.zshrc"
@@ -126,26 +214,28 @@ setup_aliases() {
 
     # Add color support for ls
     if [[ "$(detect_os)" == "mac" ]]; then
-        if ! grep -q 'alias ls=' "$HOME/.zshrc" || ! grep -q 'ls -aG' "$HOME/.zshrc"; then
-            sed -i.bak 's/alias ls="ls -a"/alias ls="ls -aG"/' "$HOME/.zshrc"
+        if ! grep -q 'ls -aG' "$HOME/.zshrc" 2>/dev/null; then
+            sed -i.bak 's/alias ls="ls -a"/alias ls="ls -aG"/' "$HOME/.zshrc" || true
         fi
     else
-        if ! grep -q 'alias ls=' "$HOME/.zshrc" || ! grep -q 'ls -a --color=auto' "$HOME/.zshrc"; then
-            sed -i.bak 's/alias ls="ls -a"/alias ls="ls -a --color=auto"/' "$HOME/.zshrc"
+        if ! grep -q 'ls -a --color=auto' "$HOME/.zshrc" 2>/dev/null; then
+            sed -i.bak 's/alias ls="ls -a"/alias ls="ls -a --color=auto"/' "$HOME/.zshrc" || true
         fi
         # Enable color support of ls and also add handy aliases
-        if ! grep -q 'eval.*dircolors' "$HOME/.zshrc"; then
+        if ! grep -q 'eval.*dircolors' "$HOME/.zshrc" 2>/dev/null; then
             echo "eval \"$(dircolors -b)\"" >> "$HOME/.zshrc"
         fi
     fi
 
     # Add color support for grep
-    if ! grep -q 'alias grep=' "$HOME/.zshrc"; then
+    if ! grep -q 'alias grep=' "$HOME/.zshrc" 2>/dev/null; then
         echo 'alias grep="grep --color=auto"' >> "$HOME/.zshrc"
     fi
 }
 
 setup_powerlevel10k() {
+    ensure_zshrc_exists
+
     echo "Setting up Powerlevel10k theme..."
     local ZSH_CUSTOM=${ZSH_CUSTOM:-"$HOME/.oh-my-zsh/custom"}
     if [[ ! -d "$ZSH_CUSTOM/themes/powerlevel10k" ]]; then
@@ -154,8 +244,8 @@ setup_powerlevel10k() {
         git -C "$ZSH_CUSTOM/themes/powerlevel10k" pull --ff-only || true
     fi
 
-    if grep -q '^ZSH_THEME=' "$HOME/.zshrc"; then
-        sed -i.bak 's/^ZSH_THEME=.*/ZSH_THEME="powerlevel10k\/powerlevel10k"/' "$HOME/.zshrc"
+    if grep -q '^ZSH_THEME=' "$HOME/.zshrc" 2>/dev/null; then
+        sed -i.bak 's/^ZSH_THEME=.*/ZSH_THEME="powerlevel10k\/powerlevel10k"/' "$HOME/.zshrc" || true
     else
         echo 'ZSH_THEME="powerlevel10k/powerlevel10k"' >> "$HOME/.zshrc"
     fi
@@ -172,31 +262,9 @@ setup_powerlevel10k() {
     fi
 
     # prevent configuration wizard from running on startup
-    if ! grep -q 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' "$HOME/.zshrc"; then
+    if ! grep -q 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' "$HOME/.zshrc" 2>/dev/null; then
         echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' >> "$HOME/.zshrc"
     fi
-}
-
-detect_os() {
-  case "$OSTYPE" in
-      darwin*) echo "mac" ;;
-      linux*) echo "linux" ;;
-      *) echo "unknown" ;;
-  esac
-}
-
-set_default_shell_to_zsh() {
-   local CURRENT_SHELL
-  CURRENT_SHELL="$(realpath "$SHELL")"
-  local TARGET_SHELL
-  TARGET_SHELL="$(realpath "$(command -v zsh)")"
- 
-  if [[ "$CURRENT_SHELL" != "$TARGET_SHELL" ]]; then
-    echo "Changing default shell from $CURRENT_SHELL to $TARGET_SHELL. May require admin password."
-    chsh -s "$TARGET_SHELL" "$USER"
-  else
-    echo "✅ Zsh is already the default login shell."
-  fi
 }
 
 setup_vim() {
@@ -284,6 +352,8 @@ main() {
         exit 1
     fi
 
+    ensure_zshrc_exists
+
     if [[ "$OS" == "mac" ]]; then
         install_dependencies_mac
         setup_dev_environment_mac
@@ -292,11 +362,20 @@ main() {
     fi
 
     ensure_uv
+
+    # Ensure zsh is default login shell even if dependency steps skipped it for any reason
+    ensure_default_shell_to_zsh || true
+
     install_oh_my_zsh
+    ensure_oh_my_zsh_is_sourced
+
     setup_powerlevel10k
     setup_aliases
     setup_git
     setup_vim
+
+    echo "Done."
+    echo "Restart your terminal, or run: exec zsh -l"
 }
 
 main "$@"
