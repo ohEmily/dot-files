@@ -167,20 +167,22 @@ ensure_uv() {
 ensure_oh_my_zsh_is_sourced() {
     ensure_zshrc_exists
 
-    local zsh_dir="$HOME/.oh-my-zsh"
-    if [[ ! -d "$zsh_dir" ]]; then
+    local omz_block_start="# ---- oh-my-zsh bootstrap ----"
+    if grep -qF "$omz_block_start" "$HOME/.zshrc" 2>/dev/null; then
         return 0
     fi
 
-    # Ensure export ZSH is present
-    if ! grep -qE '^export ZSH=.*\.oh-my-zsh' "$HOME/.zshrc" 2>/dev/null; then
-        echo 'export ZSH="$HOME/.oh-my-zsh"' >> "$HOME/.zshrc"
-    fi
+    cat >> "$HOME/.zshrc" <<'EOF'
 
-    # Ensure OMZ is sourced
-    if ! grep -qE '(^|\s)source\s+\$ZSH/oh-my-zsh\.sh' "$HOME/.zshrc" 2>/dev/null; then
-        echo 'source $ZSH/oh-my-zsh.sh' >> "$HOME/.zshrc"
-    fi
+# ---- oh-my-zsh bootstrap ----
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="${ZSH_THEME:-powerlevel10k/powerlevel10k}"
+if [ -f "$ZSH/oh-my-zsh.sh" ]; then
+  source "$ZSH/oh-my-zsh.sh"
+fi
+# ----------------------------
+
+EOF
 }
 
 install_oh_my_zsh() {
