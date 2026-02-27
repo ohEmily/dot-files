@@ -263,6 +263,11 @@ setup_powerlevel10k() {
         echo "You can run 'p10k configure' to create a new configuration"
     fi
 
+    # Source .p10k.zsh from .zshrc (p10k configure normally adds this, but we skip the wizard)
+    if ! grep -q 'source ~/.p10k.zsh' "$HOME/.zshrc" 2>/dev/null; then
+        echo '[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh' >> "$HOME/.zshrc"
+    fi
+
     # prevent configuration wizard from running on startup
     if ! grep -q 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' "$HOME/.zshrc" 2>/dev/null; then
         echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true' >> "$HOME/.zshrc"
