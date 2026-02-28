@@ -296,6 +296,25 @@ setup_vim() {
     vim -E -s +PluginInstall +qall
 }
 
+setup_claude() {
+    local CONFIG_DIR
+    CONFIG_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+    if [[ "$(detect_os)" != "mac" ]]; then
+        echo "Skipping Claude Code setup (macOS only)."
+        return 0
+    fi
+
+    if [[ ! -f "$CONFIG_DIR/.claude/settings.json" ]]; then
+        echo "Warning: No .claude/settings.json found in $CONFIG_DIR; skipping Claude Code setup."
+        return 0
+    fi
+
+    echo "Setting up Claude Code configuration..."
+    mkdir -p "$HOME/.claude"
+    cp "$CONFIG_DIR/.claude/settings.json" "$HOME/.claude/settings.json"
+}
+
 setup_git() {
     echo "Setting up git configuration..."
     local CONFIG_DIR
@@ -380,6 +399,7 @@ main() {
     setup_aliases
     setup_git
     setup_vim
+    setup_claude
 
     echo "Done."
     echo "Restart your terminal, or run: exec zsh -l"
